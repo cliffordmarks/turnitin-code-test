@@ -32,4 +32,39 @@ public class MembershipService {
 							.thenApply(nil -> members);
 				});
 	}
+
+	/**
+	 * This method simply just finds and returns all the users
+	 *
+	 * @return A CompletableFuture containing a UserList object.
+	 */
+	public CompletableFuture<UserList> fetchAllUsers() {
+		return membershipBackendClient.fetchUsers();
+	}
+
+	/**
+	 * Method to fetch all memberships with their associated user details included.
+	 * This method calls out to the php-backend service and fetches all memberships,
+	 * it then calls to fetch the user details for each user individually and
+	 * associates them with their corresponding membership.
+	 *
+	 * @return A CompletableFuture containing a fully populated MembershipList object.
+	 */
+	public CompletableFuture<MembershipList> fetchAllMembershipsWithUsers() {
+		return membershipBackendClient.fetchMemberships()
+				.thenCompose(members -> {
+
+					CompletableFuture<MembershipList> res = membershipBackendClient.fetchUsers()
+							.thenCompose(userList -> {
+								userList.getUsers().stream()
+								.forEach(user -> setMemberShip(user, members.getMemberships()));
+
+								return CompletableFuture.completedFuture(members);
+							})
+							.thenApply(vd -> members);
+					return res;
+					});
+
+	}
+
 }
